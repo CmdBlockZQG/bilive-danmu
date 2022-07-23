@@ -1,3 +1,46 @@
+/*
+
+const danmu = new Danmu(21402309)
+// 关注真白花音喵 关注真白花音谢谢喵
+
+danmu.connect()
+
+danmu.on('disconnect', () => {
+  console.log('* 从服务器断开连接，重连')
+  danmu.connect() // 重连
+})
+
+danmu.on('packet', (data) => {
+  console.log('收到数据包', data)
+})
+
+danmu.on('act', (data) => {
+  console.log('事件发生', data)
+})
+
+danmu.on('ws', () => {
+  console.log('* Websocket链接建立')
+  console.log(danmu.host)
+  console.log(danmu.token)
+})
+
+danmu.on('ready', () => {
+  console.log('准备好了')
+})
+
+danmu.on('pop', (val) => {
+  console.log(`人气值更新为${val}`)
+})
+
+danmu.on('unhandled', (cmd, data) => {
+  console.log('未知数据包', cmd, data)
+})
+
+danmu.on('事件名称', (data) => {
+  console.log(data)
+})
+
+*/
 import WebSocket from 'ws'
 import axios from 'axios'
 import pako from 'pako'
@@ -139,13 +182,13 @@ class Danmu extends EventEmitter {
     if (this.handlers[data.cmd]) {
       this.handlers[data.cmd](data)
     } else {
-      this.emit('unhandled', data)
+      this.emit('unhandled', data.cmd, data)
     }
   }
 
   _simpleHandler = (ename) => {
     return (data) => {
-      this.emit('ename', data.data)
+      this.emit(ename, data.data)
     }
   }
 
