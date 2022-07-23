@@ -1,6 +1,6 @@
 import Danmu from './danmu.js'
 
-const danmu = new Danmu(545068)
+const danmu = new Danmu(956043)
 
 danmu.connect()
 
@@ -10,11 +10,11 @@ danmu.on('disconnect', () => {
 
 danmu.on('packet', (data) => {
   // console.log(data)
-  console.log('收到数据包')
+  // console.log('收到数据包')
 })
 
 danmu.on('act', (data) => {
-  console.log('事件发生', data)
+  // console.log('事件发生', data)
 })
 
 danmu.on('ws', () => {
@@ -28,5 +28,5 @@ danmu.on('ready', () => {
 })
 
 danmu.on('pop', (val) => {
-  console.log(`人气值更新为${val}`)
+  // console.log(`人气值更新为${val}`)
 })

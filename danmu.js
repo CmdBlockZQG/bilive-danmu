@@ -60,7 +60,12 @@ class Danmu extends EventEmitter {
         try {
           obj = JSON.parse(i)
         } catch {
-          return
+          if (i.length > 1) i = i.slice(0, -1)
+          try {
+            obj = JSON.parse(i)
+          } catch {
+            return
+          }
         }
         this.emit('act', obj)
         this._route(obj)
@@ -114,12 +119,74 @@ class Danmu extends EventEmitter {
       default:
         break
     }
-    res = res.replace(/.{"cmd/g, '\r\t\n{"cmd')
-    return res.split('\r\t\n')
+    let ls = []
+    for (;;) {
+      let l = res.indexOf(`{"cmd`)
+      if (l === -1) break
+
+      let r = res.indexOf(`{"cmd`, l + 1)
+      if (r === -1) r = res.length - 1
+      r = res.lastIndexOf('}', r)
+
+      ls.push(res.slice(l, r + 1))
+
+      res = res.slice(r + 1)
+    }
+    return ls
   }
 
-  _route() {
-    // TODO
+  _route(data) {
+    if (this.handlers[data.cmd]) {
+      this.handlers[data.cmd](data)
+    } else {
+      this.emit('unhandled', data)
+    }
+  }
+
+  _simpleHandler = (ename) => {
+    return (data) => {
+      this.emit('ename', data.data)
+    }
+  }
+
+  handlers = {
+    'DANMU_MSG': (data) => { // 弹幕消息
+      const x = data.info
+      let res = {
+        content: x[1],
+        time: x[0][4],
+        type: x[0][12], // 0: 文字 1:表情 其他不清楚
+        redbag: x[0][9], // 2: 抽奖 0：不是 ？
+        position: x[0][1], // 4: 底端 1: 滚动 ?
+        color: x[0][3].toString(16).toUpperCase(),
+        user: {
+          uid: x[2][0],
+          name: x[2][1],
+          ad: x[2][2], // 是否是房管 ？
+        }
+      }
+      if (x[3]) {
+        res.medal = {
+          level: x[3][0],
+          name: x[3][1],
+          boat: x[3][10], // 0：无 1：舰长 2：提督 3：总督 ？
+        }
+      }
+      this.emit('DANMU_MSG', res)
+    },
+    'INTERACT_WORD': this._simpleHandler('INTERACT_WORD'), // 不知道什么玩意 但是贼多
+    'WATCHED_CHANGE': this._simpleHandler('WATCHED_CHANGE'), // 看过的人数变化
+    'ONLINE_RANK_COUNT': this._simpleHandler('ONLINE_RANK_COUNT'), // 在线人数排名变化
+    'ONLINE_RANK_V2': this._simpleHandler('ONLINE_RANK_V2'), // 在线人数排名变化v2
+    'ONLINE_RANK_TOP3': this._simpleHandler('ONLINE_RANK_TOP3'), // 在线人数排名前三
+    'HOT_RANK_CHANGED': this._simpleHandler('HOT_RANK_CHANGED'), // 热门排名变化
+    'HOT_RANK_CHANGED_V2': this._simpleHandler('HOT_RANK_CHANGED_V2'), // 热门排名变化v2
+    'SEND_GIFT': this._simpleHandler('SEND_GIFT'), // 送礼
+    'COMBO_SEND': this._simpleHandler('COMBO_SEND'), // 连续送礼
+    'WIDGET_BANNER': this._simpleHandler('WIDGET_BANNER'), // 不懂
+    'STOP_LIVE_ROOM_LIST': this._simpleHandler('STOP_LIVE_ROOM_LIST'), // 下播的房间
+    'ROOM_REAL_TIME_MESSAGE_UPDATE': this._simpleHandler('ROOM_REAL_TIME_MESSAGE_UPDATE'), // 一些信息更新
+    'ENTRY_EFFECT': this._simpleHandler('ENTRY_EFFECT'), // 欢迎进房
   }
 }
 
