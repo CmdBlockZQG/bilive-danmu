@@ -21,22 +21,23 @@ danmu.on('ready', () => {
   console.log('* 成功进入直播间')
 })
 
-danmu.on('unhandled', (cmd, data) => {
-  console.log('未知数据包', cmd, data)
-  db('unknown').insert({
-    cmd,
-    data
-  })
+danmu.on('danmu', (data) => {
+  // console.log('弹幕', data)
+  if (data.redbag !== 0) return
+  console.log(`${data.user.name}: ${data.content}`)
+  // db('danmu').insert(data)
 })
 
-danmu.on('DANMU_MSG', (data) => {
-  db('danmu').insert(data)
+danmu.on('sc', (data) => {
+  // console.log('sc', data)
+  console.log(`SC${data.price} ${data.user.name}: ${data.content}`)
+  // db('sc').insert(data)
 })
 
-danmu.on('SEND_GIFT', (data) => {
-  db('gift').insert(data)
+danmu.on('liveOn', (data) => {
+  // console.log('开播', data)
 })
 
-danmu.on('COMBO_SEND', (data) => {
-  db('gift').insert(data)
+danmu.on('liveOff', (data) => {
+  // console.log('下播', data)
 })

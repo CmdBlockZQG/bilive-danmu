@@ -36,10 +36,62 @@ danmu.on('unhandled', (cmd, data) => {
   console.log('未知数据包', cmd, data)
 })
 
+danmu.on('danmu', (data) => {
+  console.log('弹幕', data)
+})
+
+danmu.on('sc', (data) => {
+  console.log('sc', data)
+})
+
+danmu.on('liveOn', (data) => {
+  console.log('开播', data)
+})
+
+danmu.on('liveOff', (data) => {
+  console.log('下播', data)
+})
+
 danmu.on('事件名称', (data) => {
   console.log(data)
 })
 
+事件名 提供原始数据
+'DANMU_MSG' // 弹幕
+'INTERACT_WORD' // 不知道什么玩意 但是贼多 还是从其他直播间来的
+'WATCHED_CHANGE' // 看过的人数变化
+'ONLINE_RANK_COUNT' // 在线人数排名变化
+'ONLINE_RANK_V2' // 在线人数排名变化v2
+'ONLINE_RANK_TOP3' // 在线人数排名前三
+'HOT_RANK_CHANGED' // 热门排名变化
+'HOT_RANK_CHANGED_V2' // 热门排名变化v2
+'HOT_RANK_SETTLEMENT' // 上热门榜
+'HOT_RANK_SETTLEMENT_V2' // 上热门榜v2
+'HOT_ROOM_NOTIFY' // 热门房间通知？ 不懂
+'TRADING_SCORE' // 应该是排名
+'SEND_GIFT' // 送礼
+'COMBO_SEND' // 连续送礼
+'WIDGET_BANNER' // 不懂
+'STOP_LIVE_ROOM_LIST' // 下播的房间
+'ROOM_REAL_TIME_MESSAGE_UPDATE' // 一些信息更新
+'ENTRY_EFFECT' // 欢迎进房
+'ROOM_BLOCK_MSG' // 可能是禁言
+'DANMU_AGGREGATION' // 很多弹幕的聚合体 都是抽奖弹幕
+'NOTICE_MSG' // 通知，其他直播间的广播，本直播间上舰续舰
+'USER_TOAST_MSG' // 跳框的消息 上舰续舰
+'FULL_SCREEN_SPECIAL_EFFECT' // 全屏特效
+'GUARD_BUY' // 上舰
+'GUARD_HONOR_THOUSAND' // 千舰？
+'ROOM_CHANGE' // 直播间标题分区修改
+'LIVE' // 开播
+'PREPARING' // 下播
+'POPULARITY_RED_POCKET_START' // 发红包
+'POPULARITY_RED_POCKET_NEW' // 新发红包
+'POPULARITY_RED_POCKET_WINNER_LIST' // 红包中奖的人
+'COMMON_NOTICE_DANMAKU' // 通知 红包给主播增加了多少粉丝
+'SUPER_CHAT_MESSAGE' // SC
+'SUPER_CHAT_MESSAGE_JPN' // SC翻译成日语
+'SUPER_CHAT_MESSAGE_DELETE' // SC过期
 */
 import WebSocket from 'ws'
 import axios from 'axios'
@@ -179,18 +231,19 @@ class Danmu extends EventEmitter {
   }
 
   _route(data) {
+    if (data.data) {
+      if (data.data.data) this.emit(data.cmd, data.data.data)
+      else this.emit(data.cmd, data.data)
+    } else {
+      this.emit(data.cmd, data)
+    }
+
     if (this.handlers[data.cmd]) {
       this.handlers[data.cmd](data)
-    } else {
-      this.emit('unhandled', data.cmd, data)
     }
   }
 
-  _simpleHandler = (ename) => {
-    return (data) => {
-      this.emit(ename, data.data)
-    }
-  }
+  _simpleHandler = (data) => this.emit(data.cmd, data.data)
 
   handlers = {
     'DANMU_MSG': (data) => { // 弹幕消息
@@ -198,38 +251,55 @@ class Danmu extends EventEmitter {
       let res = {
         content: x[1],
         time: x[0][4],
-        type: x[0][12], // 0: 文字 1:表情 其他不清楚
-        redbag: x[0][9], // 2: 抽奖 0：不是 ？
-        position: x[0][1], // 4: 底端 1: 滚动 ?
+        type: x[0][12], // 0:文字 1:表情
+        redbag: x[0][9], // 2: 抽奖 0：不是
+        position: x[0][1], // 1:滚动 4:底端 5:顶端
         color: x[0][3].toString(16).toUpperCase(),
         user: {
           uid: x[2][0],
           name: x[2][1],
-          ad: x[2][2], // 是否是房管 ？
+          ad: x[2][2], // 0:普通 1:房管
         }
       }
       if (x[3]) {
         res.medal = {
           level: x[3][0],
           name: x[3][1],
-          boat: x[3][10], // 0：无 1：舰长 2：提督 3：总督 ？
+          boat: x[3][10], // 0:无 1:总督 2:提督 3:舰长
         }
       }
-      this.emit('DANMU_MSG', res)
+      this.emit('danmu', res)
     },
-    'INTERACT_WORD': this._simpleHandler('INTERACT_WORD'), // 不知道什么玩意 但是贼多
-    'WATCHED_CHANGE': this._simpleHandler('WATCHED_CHANGE'), // 看过的人数变化
-    'ONLINE_RANK_COUNT': this._simpleHandler('ONLINE_RANK_COUNT'), // 在线人数排名变化
-    'ONLINE_RANK_V2': this._simpleHandler('ONLINE_RANK_V2'), // 在线人数排名变化v2
-    'ONLINE_RANK_TOP3': this._simpleHandler('ONLINE_RANK_TOP3'), // 在线人数排名前三
-    'HOT_RANK_CHANGED': this._simpleHandler('HOT_RANK_CHANGED'), // 热门排名变化
-    'HOT_RANK_CHANGED_V2': this._simpleHandler('HOT_RANK_CHANGED_V2'), // 热门排名变化v2
-    'SEND_GIFT': this._simpleHandler('SEND_GIFT'), // 送礼
-    'COMBO_SEND': this._simpleHandler('COMBO_SEND'), // 连续送礼
-    'WIDGET_BANNER': this._simpleHandler('WIDGET_BANNER'), // 不懂
-    'STOP_LIVE_ROOM_LIST': this._simpleHandler('STOP_LIVE_ROOM_LIST'), // 下播的房间
-    'ROOM_REAL_TIME_MESSAGE_UPDATE': this._simpleHandler('ROOM_REAL_TIME_MESSAGE_UPDATE'), // 一些信息更新
-    'ENTRY_EFFECT': this._simpleHandler('ENTRY_EFFECT'), // 欢迎进房
+    'SUPER_CHAT_MESSAGE': (data) => {
+      const x = data.data.data
+      let res = {
+        content: x.message,
+        time: x.ts * 1000,
+        price: x.price,
+        user: {
+          uid: x.uid,
+          name: x.user_info.uname
+        }
+      }
+      if (x.medal_info) {
+        res.medal = {
+          level: x.medal_info.medal_level,
+          name: x.medal_info.medal_name,
+          boat: x.medal_info.guard_level
+        }
+      }
+      this.emit('sc', res)
+    },
+    'LIVE': (data) => {
+      this.emit('liveOn', {
+        time: data.data.live_time * 1000
+      })
+    },
+    'PREPARING': (data) => {
+      this.emit('liveOff', {
+        time: Date.now()
+      })
+    }
   }
 }
 
