@@ -56,7 +56,7 @@ danmu.on('事件名称', (data) => {
   console.log(data)
 })
 
-事件名 提供原始数据
+事件名称 提供原始数据
 'DANMU_MSG' // 弹幕
 'INTERACT_WORD' // 不知道什么玩意 但是贼多 还是从其他直播间来的
 'WATCHED_CHANGE' // 看过的人数变化
@@ -271,7 +271,7 @@ class Danmu extends EventEmitter {
       this.emit('danmu', res)
     },
     'SUPER_CHAT_MESSAGE': (data) => {
-      const x = data.data.data
+      const x = data.data
       let res = {
         content: x.message,
         time: x.ts * 1000,
@@ -291,11 +291,13 @@ class Danmu extends EventEmitter {
       this.emit('sc', res)
     },
     'LIVE': (data) => {
+      console.log(data)
       this.emit('liveOn', {
         time: data.data.live_time * 1000
       })
     },
     'PREPARING': (data) => {
+      console.log(data)
       this.emit('liveOff', {
         time: Date.now()
       })

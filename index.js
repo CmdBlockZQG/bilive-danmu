@@ -1,5 +1,7 @@
 import Danmu from './danmu.js'
 import db from './db.js'
+import api from './api.js'
+import wss from './wss.js'
 
 const danmu = new Danmu(21402309)
 // 关注真白花音喵 关注真白花音谢谢喵
@@ -13,31 +15,46 @@ danmu.on('disconnect', () => {
 
 danmu.on('ws', () => {
   console.log('* Websocket链接建立')
-  // console.log(danmu.host)
-  // console.log(danmu.token)
 })
 
 danmu.on('ready', () => {
   console.log('* 成功进入直播间')
+  api()
 })
 
 danmu.on('danmu', (data) => {
-  // console.log('弹幕', data)
   if (data.redbag !== 0) return
-  console.log(`${data.user.name}: ${data.content}`)
-  // db('danmu').insert(data)
+  wss({
+    op: 'danmu',
+    data: data
+  })
+  db('danmu').insert(data)
+  if (data.content.match(/^【.*】$/)) {
+    console.log(data.content)
+  }
 })
 
 danmu.on('sc', (data) => {
-  // console.log('sc', data)
+  wss({
+    op: 'sc',
+    data: data
+  })
   console.log(`SC${data.price} ${data.user.name}: ${data.content}`)
-  // db('sc').insert(data)
+  db('sc').insert(data)
 })
 
 danmu.on('liveOn', (data) => {
-  // console.log('开播', data)
+  db('live').insert({
+    type: true,
+    time: data.time
+  })
+  console.log('开播', data)
 })
 
 danmu.on('liveOff', (data) => {
-  // console.log('下播', data)
+  db('live').insert({
+    type: false,
+    time: data.time
+  })
+  console.log('下播', data)
 })
