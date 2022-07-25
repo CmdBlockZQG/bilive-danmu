@@ -63,6 +63,9 @@ onMounted(() => {
 
 function onDanmu(data) {
   danmu.value.push(data)
+  if ((danmu.value.length > 1000 && hover.value === false) || danmu.value.length > 5000) {
+    danmu.value.splice(0, danmu.value.length - 1000)
+  }
   if (subWin) {
     const l = data.content.indexOf('【'),
           r = data.content.indexOf('】')
