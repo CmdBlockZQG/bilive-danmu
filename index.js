@@ -45,7 +45,7 @@ danmu.on('sc', (data) => {
 
 danmu.on('liveOn', (data) => {
   db('live').insert({
-    type: true,
+    type: 1,
     time: data.time
   })
   console.log('开播', data)
@@ -53,7 +53,7 @@ danmu.on('liveOn', (data) => {
 
 danmu.on('liveOff', (data) => {
   db('live').insert({
-    type: false,
+    type: 0,
     time: data.time
   })
   console.log('下播', data)

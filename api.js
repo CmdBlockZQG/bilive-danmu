@@ -7,7 +7,7 @@ const app = express()
 // app.use(express.static('fe/dist'))
 
 app.get('/live', async (req, res) => {
-  res.json(await db('live').find())
+  res.json(await db('live').find({}, { sort: { time: -1 } }))
 })
 
 app.get('/danmu/:l/:r', async (req, res) => {
