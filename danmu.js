@@ -291,13 +291,11 @@ class Danmu extends EventEmitter {
       this.emit('sc', res)
     },
     'LIVE': (data) => {
-      console.log(data)
       this.emit('liveOn', {
         time: Date.now()
       })
     },
     'PREPARING': (data) => {
-      console.log(data)
       this.emit('liveOff', {
         time: Date.now()
       })

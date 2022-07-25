@@ -5,6 +5,11 @@
 <script setup>
 
 function open() {
+  window.open(
+    '/hud/#/live_danmu',
+    'live_danmu',
+    'height=600,width=300,esizable'
+  )
 }
 
 </script>

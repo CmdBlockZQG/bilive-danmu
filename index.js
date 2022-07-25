@@ -26,7 +26,9 @@ danmu.on('danmu', (data) => {
   if (data.redbag !== 0) return
   wss(data)
   db('danmu').insert(data)
-  if (data.content.indexOf('【') + data.content.indexOf('】') === -2) {
+  const l = data.content.indexOf('【'),
+        r = data.content.indexOf('】')
+  if (l !== -1 && r !== -1 && l + 1 !== r) {
     console.log(data.content)
   }
 })

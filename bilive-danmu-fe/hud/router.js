@@ -6,6 +6,10 @@ const router = createRouter({
     {
       path: '/live_danmu',
       component: () => import('./LiveDanmu.vue'),
+    },
+    {
+      path: '/live_sub',
+      component: () => import('./LiveSub.vue'),
     }
   ]
 })

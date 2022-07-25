@@ -1,4 +1,5 @@
 import { WebSocketServer } from 'ws'
+import crypto from 'crypto'
 
 const wss = new WebSocketServer({ port: 3001 })
 const randomStr = (l = 16) => crypto.randomBytes(l).toString('base64url')
