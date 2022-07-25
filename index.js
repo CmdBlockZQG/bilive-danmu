@@ -24,23 +24,17 @@ danmu.on('ready', () => {
 
 danmu.on('danmu', (data) => {
   if (data.redbag !== 0) return
-  wss({
-    op: 'danmu',
-    data: data
-  })
+  wss(data)
   db('danmu').insert(data)
-  if (data.content.match(/^【.*】$/)) {
+  if (data.content.indexOf('【') + data.content.indexOf('】') === -2) {
     console.log(data.content)
   }
 })
 
 danmu.on('sc', (data) => {
-  wss({
-    op: 'sc',
-    data: data
-  })
+  wss(data)
+  db('danmu').insert(data)
   console.log(`SC${data.price} ${data.user.name}: ${data.content}`)
-  db('sc').insert(data)
 })
 
 danmu.on('liveOn', (data) => {

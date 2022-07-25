@@ -293,7 +293,7 @@ class Danmu extends EventEmitter {
     'LIVE': (data) => {
       console.log(data)
       this.emit('liveOn', {
-        time: data.data.live_time * 1000
+        time: Date.now()
       })
     },
     'PREPARING': (data) => {

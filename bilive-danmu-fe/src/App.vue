@@ -41,7 +41,7 @@ function jump(i) {
       <li v-for="(p, i) in ls" @click="jump(i)" class="mdui-list-item mdui-ripple">{{ p.text }}</li>
     </ul>
   </div>
-  <div class="mdui-container">
+  <div class="mdui-container" style="padding-top: 24px;">
     <router-view></router-view>
   </div>
 </template>

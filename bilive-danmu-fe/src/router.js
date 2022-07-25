@@ -12,11 +12,11 @@ const router = createRouter({
           component: () => import('./views/Danmu.vue')
         },
         {
-          path: '/live',
+          path: '/',
           component: () => import('./views/Live.vue')
         }
       ]
-    },
+    }
   ]
 })
 
