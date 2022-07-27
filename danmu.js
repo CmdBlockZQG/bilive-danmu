@@ -20,8 +20,6 @@ danmu.on('act', (data) => {
 
 danmu.on('ws', () => {
   console.log('* Websocket链接建立')
-  console.log(danmu.host)
-  console.log(danmu.token)
 })
 
 danmu.on('ready', () => {
@@ -112,18 +110,14 @@ const makePacket = (op, data) => {
 
 const readPacket = (buf) => {
   const totLen = buf.readUIntBE(0, 4), // 封包总长度
-        headLen = buf.readUIntBE(4, 2), // 封包头部长度
-        protover = buf.readUIntBE(6, 2), // 协议版本
-        op = buf.readUIntBE(8, 4), // 操作码
-        seq = buf.readUIntBE(12, 4), // 序列号
-        raw = buf.subarray(headLen, totLen)// 原始数据
+        headLen = buf.readUIntBE(4, 2) // 封包头部长度
   return {
     totLen,
     headLen,
-    protover,
-    op,
-    seq,
-    raw
+    protover: buf.readUIntBE(6, 2), // 协议版本
+    op: buf.readUIntBE(8, 4), // 操作码
+    seq: buf.readUIntBE(12, 4), // 序列号
+    raw: buf.subarray(headLen, totLen) // 原始数据
   }
 }
 
@@ -138,16 +132,16 @@ class Danmu extends EventEmitter {
 
   async connect() {
     const { data: danmuInfo } = await axios.get(`https://api.live.bilibili.com/xlive/web-room/v1/index/getDanmuInfo?id=${this.room}&type=0`)
-    this.token = danmuInfo.data.token
-    this.host = danmuInfo.data.host_list[0].host
+    this._token = danmuInfo.data.token
+    this._host = danmuInfo.data.host_list[0].host
 
-    this.ws = new WebSocket(`wss://${this.host}/sub`)
+    this._ws = new WebSocket(`wss://${this._host}/sub`)
 
-    this.ws.on('close', () => {
+    this._ws.on('close', () => {
       this.emit('disconnect')
     })
 
-    this.ws.on('message', (data) => {
+    this._ws.on('message', (data) => {
       this.emit('packet', data)
       const body = this._decodePacket(data)
       body.forEach((i) => {
@@ -167,7 +161,7 @@ class Danmu extends EventEmitter {
       })
     })
 
-    this.ws.on('open', () => {
+    this._ws.on('open', () => {
       this.emit('ws')
       
       // 发送认证包
@@ -177,13 +171,13 @@ class Danmu extends EventEmitter {
         protover: 3,
         platform: 'web',
         type: 2,
-        key: this.token
+        key: this._token
       })
-      this.ws.send(makePacket(7, data))
+      this._ws.send(makePacket(7, data))
       
       // 开始发送心跳
       this.hbTimer = setInterval(() => {
-        this.ws.send(makePacket(2, '[object Object]'))
+        this._ws.send(makePacket(2, '[object Object]'))
       }, 1000 * 30)
     })
   }
@@ -259,10 +253,8 @@ class Danmu extends EventEmitter {
           uid: x[2][0],
           name: x[2][1],
           ad: x[2][2], // 0:普通 1:房管
-        }
-      }
-      if (x[3]) {
-        res.medal = {
+        },
+        medal: {
           level: x[3][0],
           name: x[3][1],
           boat: x[3][10], // 0:无 1:总督 2:提督 3:舰长

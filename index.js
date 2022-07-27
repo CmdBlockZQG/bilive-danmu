@@ -35,8 +35,12 @@ danmu.on('danmu', (data) => {
 
 danmu.on('sc', (data) => {
   wss(data)
-  db('danmu').insert(data)
+  db('sc').insert(data)
   console.log(`SC${data.price} ${data.user.name}: ${data.content}`)
+})
+
+danmu.on('ROOM_CHANGE', (data) => {
+  db('ROOM_CHANGE').insert(data)
 })
 
 danmu.on('liveOn', (data) => {
