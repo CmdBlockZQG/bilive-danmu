@@ -8,12 +8,16 @@ const router = createRouter({
       component: () => import('./App.vue'),
       children: [
         {
-          path: '/:start/:end',
-          component: () => import('./views/Danmu.vue')
-        },
-        {
           path: '/',
           component: () => import('./views/Live.vue')
+        },
+        {
+          path: '/file',
+          component: () => import('./views/File.vue')
+        },
+        {
+          path: '/:start/:end',
+          component: () => import('./views/Danmu.vue')
         }
       ]
     }

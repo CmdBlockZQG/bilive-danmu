@@ -10,6 +10,7 @@ let end = ref(0)
 
 let danmuList = ref([])
 let scList = ref([])
+let rawData
 
 let loading = ref(true)
 
@@ -18,16 +19,22 @@ const init = async () => {
   start.value = Number(route.params.start)
   end.value = Number(route.params.end) || Date.now()
 
-  danmuList.value = (await axios.get(`/api/danmu/${start.value}/${end.value}`)).data
-  scList.value = (await axios.get(`/api/sc/${start.value}/${end.value}`)).data
+  rawData = {
+    danmu: (await axios.get(`/api/danmu/${start.value}/${end.value}`)).data,
+    sc: (await axios.get(`/api/sc/${start.value}/${end.value}`)).data
+  }
+
+  danmuList.value = rawData.danmu
+  scList.value = rawData.sc
 
   loading.value = false
 
   await nextTick()
+  const sl = 30
   let danmuChart = echarts.init(document.getElementById('danmu-chart'))
   let data = []
   let p = 0;
-  for (let rt = 0; start.value + rt <= end.value + 30 * 1000 ; rt += 30 * 1000) {
+  for (let rt = 0; start.value + rt <= end.value + sl * 1000 ; rt += sl * 1000) {
     let res = 0
     const t = start.value + rt
     for (;; ++p) {
@@ -58,7 +65,8 @@ const init = async () => {
     },
     yAxis: {
       type: 'value',
-      boundaryGap: [0, '100%']
+      boundaryGap: [0, '100%'],
+      max: 'dataMax'
     },
     dataZoom: [
       {
@@ -85,41 +93,77 @@ const init = async () => {
 
 }
 onMounted(init)
-watch(() => route.params, init)
+watch(() => route.params.start, init)
+watch(() => route.params.end, init)
+
+let files = ref([])
+async function selectFile() {
+  let dialog = new mdui.Dialog('#file-dialog')
+  files.value = (await axios.get(`/api/video`)).data
+  await nextTick()
+  dialog.open()
+}
+
+function replay(file) {
+  let win = window.open(
+    '/hud/#/play', 
+    `replay${Date.now()}`,
+    'height=450,width=960,esizable'
+  )
+  win.rawData = {
+    videoFile: `/api/video/${file}`,
+    danmu: rawData.danmu,
+    sc: rawData.sc,
+    start: start.value,
+    end: end.value
+  }
+}
 
 </script>
 
 <template>
-<template v-if="loading">
-  <div class="mdui-progress">
-    <div class="mdui-progress-indeterminate"></div>
-  </div>
-</template>
-<template v-else>
-  <div class="mdui-table-fluid">
-    <table class="mdui-table">
-      <tbody>
-        <tr>
-          <td>开始时间</td>
-          <td>{{ (new Date(start)).toLocaleString() }}</td>
-        </tr>
-        <tr>
-          <td>结束时间</td>
-          <td>{{ (new Date(end)).toLocaleString() }}</td>
-        </tr>
-        <tr>
-          <td>弹幕总数</td>
-          <td>{{ danmuList.length }}</td>
-        </tr>
-        <tr>
-          <td>SC总数</td>
-          <td>{{ scList.length }}</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+  <template v-if="loading">
+    <div class="mdui-progress">
+      <div class="mdui-progress-indeterminate"></div>
+    </div>
+  </template>
+  <template v-else>
+    <button v-if="route.params.end === 0" class="mdui-fab mdui-fab-fixed mdui-ripple" @click="init">
+      <i class="mdui-icon material-icons">refresh</i>
+    </button>
+    <div class="mdui-table-fluid">
+      <table class="mdui-table">
+        <tbody>
+          <tr>
+            <td>开始时间</td>
+            <td>{{ (new Date(start)).toLocaleString() }}</td>
+          </tr>
+          <tr>
+            <td>结束时间</td>
+            <td>{{ (new Date(end)).toLocaleString() }}</td>
+          </tr>
+          <tr>
+            <td>弹幕总数</td>
+            <td>{{ danmuList.length }}</td>
+          </tr>
+          <tr>
+            <td>SC总数</td>
+            <td>{{ scList.length }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-  <div id="danmu-chart" style="height: 500px;"></div>
+    <button class="mdui-btn mdui-color-theme-accent mdui-ripple" @click="selectFile">播放回放</button>
 
-</template>
+    <div id="danmu-chart" style="height: 400px;"></div>
+  </template>
+  <div class="mdui-dialog" id="file-dialog">
+    <div class="mdui-dialog-title">选择视频文件</div>
+    <div class="mdui-dialog-content">
+      <ul class="mdui-list">
+        <li v-for="file in files" class="mdui-list-item mdui-ripple" @click="replay(file)">{{ file }}</li>
+      </ul>
+    </div>
+  </div>
 </template>

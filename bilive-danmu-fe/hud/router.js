@@ -10,6 +10,10 @@ const router = createRouter({
     {
       path: '/live_sub',
       component: () => import('./LiveSub.vue'),
+    },
+    {
+      path: '/play',
+      component: () => import('./Player.vue')
     }
   ]
 })

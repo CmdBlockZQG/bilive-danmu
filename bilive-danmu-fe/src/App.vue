@@ -35,18 +35,6 @@ onMounted(async () => {
   }
 })
 
-function jumpHome() {
-  router.push(`/`)
-}
-
-function jumpLive() {
-  router.push(`/${live.value}/0`)
-}
-
-function jump(i) {
-  router.push(`/${ls.value[i].start}/${ls.value[i].end}`)
-}
-
 </script>
 
 <template>
@@ -54,14 +42,18 @@ function jump(i) {
     <ul class="mdui-list">
       <li class="mdui-list-item mdui-ripple">
         <i class="mdui-list-item-icon mdui-icon material-icons">live_tv</i>
-        <div class="mdui-list-item-content" @click="jumpHome">直播实时</div>
+        <div class="mdui-list-item-content" @click="router.push(`/`)">直播实时</div>
+      </li>
+      <li class="mdui-list-item mdui-ripple">
+        <i class="mdui-list-item-icon mdui-icon material-icons">folder_open</i>
+        <div class="mdui-list-item-content" @click="router.push(`/file`)">文件</div>
       </li>
 
       <li class="mdui-subheader">进行中的直播</li>
-      <li v-if="live" @click="jumpLive()" class="mdui-list-item mdui-ripple">{{ timeToText(live) }}</li>
+      <li v-if="live" @click="router.push(`/${live}/0`)" class="mdui-list-item mdui-ripple">{{ timeToText(live) }}</li>
 
       <li class="mdui-subheader">历史直播</li>
-      <li v-for="(p, i) in ls" @click="jump(i)" class="mdui-list-item mdui-ripple">{{ p.text }}</li>
+      <li v-for="(p, i) in ls" @click="router.push(`/${ls[i].start}/${ls[i].end}`)" class="mdui-list-item mdui-ripple">{{ p.text }}</li>
     </ul>
   </div>
   <div class="mdui-container" style="padding-top: 24px;">
