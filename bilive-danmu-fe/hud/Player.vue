@@ -48,25 +48,14 @@ let danmu = ref([])
 let sc = ref([])
 let sub = ref('')
 
-const fontSize = 24
-const danmuGap = 12
-const offsetY = 24
+const renderFontSize = 24
+const renderGap = 12
 let canvasW, canvasH
 let renderQueue = []
-let rowX = []
+let rowMaxX = []
 let rowNum = 1
 
-/*
-{
-  x: ,
-  y: ,
-  w: ,
-  row: ,
-  color: ,
-  content: 
-
-}
-*/
+let bottomDanmu = [], topDanmu = []
 
 function addSc(cur) {
   sc.value.unshift(cur)
@@ -120,7 +109,7 @@ function resizeCanvas() {
   const h = video.offsetHeight,
         w = video.offsetWidth
   if (canvas.offsetHeight !== h || canvas.offsetWidth !== w) {
-    rowNum = Math.floor(h / fontSize)
+    rowNum = Math.floor(h / renderFontSize)
     canvasW = w
     canvasH = h
     canvas.width = w * pixelRatio
@@ -130,16 +119,22 @@ function resizeCanvas() {
 
     canvasCtx = canvas.getContext('2d')
     canvasCtx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
-    canvasCtx.font = `bold ${fontSize}px Microsoft YaHei`
+    canvasCtx.font = `bold ${renderFontSize}px Microsoft YaHei`
     canvasCtx.strokeStyle = '#000000'
   }
+}
+
+function renderText(content, x, y, color) {
+  canvasCtx.strokeText(content, x, y + 20)
+  canvasCtx.fillStyle = color
+  canvasCtx.fillText(content, x, y + 20)
 }
 
 function renderDanmu(cur) {
   let row = -1, minX = 0
   for (let i = 0; i < rowNum; ++i) {
-    if (rowX[i] < rowX[minX]) minX = i
-    if (rowX[i] <= canvasW - danmuGap) {
+    if (rowMaxX[i] < rowMaxX[minX]) minX = i
+    if (rowMaxX[i] <= canvasW - renderGap) {
       row = i
       break
     }
@@ -147,19 +142,33 @@ function renderDanmu(cur) {
   if (row === -1) row = minX
   const next = {
     x: canvasW,
-    y: row * fontSize,
+    y: row * renderFontSize,
     w: canvasCtx.measureText(cur.content).width,
     row: row,
     color: '#' + cur.color,
     content: cur.content
   }
-  rowX[next.row] = Math.max(rowX[next.row], next.x + next.w)
+  rowMaxX[next.row] = Math.max(rowMaxX[next.row], next.x + next.w)
   renderQueue.push(next)
 
-  // canvasCtx.font = `bold ${fontSize}px Microsoft YaHei`
-  canvasCtx.strokeText(next.content, next.x, next.y + offsetY)
-  canvasCtx.fillStyle = next.color
-  canvasCtx.fillText(next.content, next.x, next.y + offsetY)
+  renderText(next.content, next.x, next.y, next.color)
+}
+
+function renderFixedDanmu() {
+  for (let i = 0; i < topDanmu.length; ++i) {
+    let next = topDanmu[i]
+    if (!next) continue
+    next.x = (canvasW - next.w) / 2
+    next.y = i * renderFontSize
+    renderText(next.content, next.x, next.y, next.color)
+  }
+  for (let i = 0; i < bottomDanmu.length; ++i) {
+    let next = bottomDanmu[i]
+    if (!next) continue
+    next.x = (canvasW - next.w) / 2
+    next.y = canvasH - (i + 1) * renderFontSize
+    renderText(next.content, next.x, next.y, next.color)
+  }
 }
 
 function frame() {
@@ -168,19 +177,26 @@ function frame() {
   var w = canvasW
   var h = canvasH
   canvasCtx.clearRect(0, 0, w, h)
-  rowX = Array(rowNum).fill(0)
+  rowMaxX = Array(rowNum).fill(0)
 
   renderQueue = renderQueue.filter((cur) => {
     if (cur.x + cur.w < 0) return false
     cur.x -= 1
-    rowX[cur.row] = Math.max(rowX[cur.row], cur.x + cur.w)
+    rowMaxX[cur.row] = Math.max(rowMaxX[cur.row], cur.x + cur.w)
 
-    // canvasCtx.font = `bold ${fontSize}px Microsoft YaHei`
-    canvasCtx.strokeText(cur.content, cur.x, cur.y + offsetY)
-    canvasCtx.fillStyle = cur.color
-    canvasCtx.fillText(cur.content, cur.x, cur.y + offsetY)
+    renderText(cur.content, cur.x, cur.y, cur.color)
 
     return true
+  })
+
+  let t = Date.now()
+  bottomDanmu = bottomDanmu.map((cur) => {
+    if (cur && cur.time + 5000 < t) return false
+    else return cur
+  })
+  topDanmu = topDanmu.map((cur) => {
+    if (cur && cur.time + 5000 < t) return false
+    else return cur
   })
 
   let now = video.currentTime * 1000 + x.start
@@ -193,8 +209,39 @@ function frame() {
     const cur = x.danmu[pd]
     if(cur.time > now) break
     listAddDanmu(cur)
-    renderDanmu(cur)
+    switch (cur.position) {
+      case 1:
+        renderDanmu(cur)
+        break
+      case 4:
+        for (let i = 0; i <= bottomDanmu.length; ++i) {
+          if (!bottomDanmu[i]) {
+            bottomDanmu[i] = {
+              w: canvasCtx.measureText(cur.content).width,
+              time: Date.now(),
+              color: '#' + cur.color,
+              content: cur.content
+            }
+            break
+          }
+        }
+        break
+      case 5:
+        for (let i = 0; i <= topDanmu.length; ++i) {
+          if (!topDanmu[i]) {
+            topDanmu[i] = {
+              w: canvasCtx.measureText(cur.content).width,
+              time: Date.now(),
+              color: '#' + cur.color,
+              content: cur.content
+            }
+            break
+          }
+        }
+        break
+    }
   }
+  renderFixedDanmu()
   window.requestAnimationFrame(frame)
 }
 
