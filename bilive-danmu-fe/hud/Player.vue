@@ -1,6 +1,6 @@
 <template>
   <video controls :src="x.videoFile" id="video"></video>
-
+  <canvas id="canvas"></canvas>
   <div id="danmu">
     <div class="mdui-tab mdui-tab-scrollable mdui-theme-layout-dark" id="sc-tab" mdui-tab style="padding: 0; min-height: 32px;">
       <a v-for="(p, i) in sc" class="mdui-ripple sc-tab-item" @click="showSc(i)">￥{{ p.price }} {{ p.user.name }}</a>
@@ -16,7 +16,7 @@
       <i class="mdui-icon material-icons">arrow_downward</i>
     </button>
     <div id="danmu-container" @scroll="onScorll">
-      <div class="danmu" v-for="i in danmu" style="margin-bottom: 8px;">
+      <div class="danmu" v-for="i in danmu" style="margin-bottom: 8px; ">
         <template v-if="i.medal.name">
           {{ i.medal.name + i.medal.level + boatDic[i.medal.boat] }} |
         </template>
@@ -24,16 +24,22 @@
       </div>
       <div id="anchor"></div>
     </div>
-
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
 const boatDic = { 0: '', 1: '总', 2: '提', 3: '舰' }
+const pixelRatio = (() => {
+  const ctx = document.createElement('canvas').getContext('2d'),
+        dpr = window.devicePixelRatio || 1,
+        bsr = ctx.backingStorePixelRatio || 1
+  return dpr / bsr
+})()
 
 const x = window.rawData
-let video, scTab, dmCtr
+let video, scTab, dmCtr, canvas
+let canvasCtx
 let hover = ref(false)
 let lock = false
 
@@ -41,6 +47,26 @@ let pd, ps
 let danmu = ref([])
 let sc = ref([])
 let sub = ref('')
+
+const fontSize = 24
+const danmuGap = 12
+const offsetY = 24
+let canvasW, canvasH
+let renderQueue = []
+let rowX = []
+let rowNum = 1
+
+/*
+{
+  x: ,
+  y: ,
+  w: ,
+  row: ,
+  color: ,
+  content: 
+
+}
+*/
 
 function addSc(cur) {
   sc.value.unshift(cur)
@@ -90,8 +116,73 @@ function listAddDanmu(cur) {
   }
 }
 
+function resizeCanvas() {
+  const h = video.offsetHeight,
+        w = video.offsetWidth
+  if (canvas.offsetHeight !== h || canvas.offsetWidth !== w) {
+    rowNum = Math.floor(h / fontSize)
+    canvasW = w
+    canvasH = h
+    canvas.width = w * pixelRatio
+    canvas.height = h * pixelRatio
+    canvas.style.width = w + 'px'
+    canvas.style.height = h + 'px'
+
+    canvasCtx = canvas.getContext('2d')
+    canvasCtx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
+    canvasCtx.font = `bold ${fontSize}px Microsoft YaHei`
+    canvasCtx.strokeStyle = '#000000'
+  }
+}
+
+function renderDanmu(cur) {
+  let row = -1, minX = 0
+  for (let i = 0; i < rowNum; ++i) {
+    if (rowX[i] < rowX[minX]) minX = i
+    if (rowX[i] <= canvasW - danmuGap) {
+      row = i
+      break
+    }
+  }
+  if (row === -1) row = minX
+  const next = {
+    x: canvasW,
+    y: row * fontSize,
+    w: canvasCtx.measureText(cur.content).width,
+    row: row,
+    color: '#' + cur.color,
+    content: cur.content
+  }
+  rowX[next.row] = Math.max(rowX[next.row], next.x + next.w)
+  renderQueue.push(next)
+
+  // canvasCtx.font = `bold ${fontSize}px Microsoft YaHei`
+  canvasCtx.strokeText(next.content, next.x, next.y + offsetY)
+  canvasCtx.fillStyle = next.color
+  canvasCtx.fillText(next.content, next.x, next.y + offsetY)
+}
+
 function frame() {
   if (video.paused) return
+  
+  var w = canvasW
+  var h = canvasH
+  canvasCtx.clearRect(0, 0, w, h)
+  rowX = Array(rowNum).fill(0)
+
+  renderQueue = renderQueue.filter((cur) => {
+    if (cur.x + cur.w < 0) return false
+    cur.x -= 1
+    rowX[cur.row] = Math.max(rowX[cur.row], cur.x + cur.w)
+
+    // canvasCtx.font = `bold ${fontSize}px Microsoft YaHei`
+    canvasCtx.strokeText(cur.content, cur.x, cur.y + offsetY)
+    canvasCtx.fillStyle = cur.color
+    canvasCtx.fillText(cur.content, cur.x, cur.y + offsetY)
+
+    return true
+  })
+
   let now = video.currentTime * 1000 + x.start
   for (; ps < x.sc.length; ++ps) {
     const cur = x.sc[ps]
@@ -102,6 +193,7 @@ function frame() {
     const cur = x.danmu[pd]
     if(cur.time > now) break
     listAddDanmu(cur)
+    renderDanmu(cur)
   }
   window.requestAnimationFrame(frame)
 }
@@ -137,14 +229,14 @@ function onplay() {
 
 onMounted(() => {
   video = document.getElementById('video')
+  canvas = document.getElementById('canvas')
   scTab = new mdui.Tab('#sc-tab')
   dmCtr = document.getElementById('danmu-container')
 
+  resizeCanvas()
+  window.onresize = resizeCanvas
+
   video.onplaying = onplay
-
-  video.onpause = () => {
-
-  }
 })
 
 </script>
@@ -160,9 +252,20 @@ onMounted(() => {
   }
 
   #video {
-    background-color: black;
     width: calc(100vw - 280px);
     height: calc(100vh - 4px);
+
+    background-color: black;
+  }
+
+  #canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+
+    z-index: 10;
+
+    pointer-events: none;
   }
 
   a.sc-tab-item {
@@ -187,6 +290,7 @@ onMounted(() => {
 
     height: calc(100vh - 180px);
     overflow-y: scroll;
+    word-break: break-all;
 
     padding: 8px;
   }

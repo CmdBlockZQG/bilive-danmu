@@ -39,14 +39,11 @@ danmu.on('sc', (data) => {
   console.log(`SC${data.price} ${data.user.name}: ${data.content}`)
 })
 
-danmu.on('ROOM_CHANGE', (data) => {
-  db('ROOM_CHANGE').insert(data)
-})
-
 danmu.on('liveOn', (data) => {
   db('live').insert({
     type: 1,
-    time: data.time
+    time: data.time,
+    title: data.title
   })
   console.log('开播', data)
 })
