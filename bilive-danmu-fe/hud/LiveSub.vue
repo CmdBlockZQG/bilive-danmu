@@ -24,7 +24,7 @@
   window.addEventListener('danmu_sub', (e) => {
     sub.value.push(e.detail)
     if ((sub.value.length > 100 && hover.value === false) || sub.value.length > 1000) {
-      sub.value.splice(0, danmu.value.length - 100)
+      sub.value.splice(0, sub.value.length - 100)
     }
     if (hover.value) return
     nextTick(() => {

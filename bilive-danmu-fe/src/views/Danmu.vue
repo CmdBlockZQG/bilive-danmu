@@ -96,15 +96,27 @@ onMounted(init)
 watch(() => route.params.start, init)
 watch(() => route.params.end, init)
 
-let files = ref([])
-async function selectFile() {
-  let dialog = new mdui.Dialog('#file-dialog')
-  files.value = (await axios.get(`/api/video`)).data
-  await nextTick()
-  dialog.open()
+function timeToText(time) {
+  let t = new Date(time),
+        m = t.getMonth() + 1,
+        d = t.getDate(),
+        h = t.getHours()
+  return `${m}月${d}日${h}点场`
 }
 
-function replay(file) {
+async function replay() {
+  const files = (await axios.get(`/api/video`)).data
+  let file = '', timeText = timeToText(start.value)
+  for (let i = 0; i < files.length; ++i) {
+    if (files[i].indexOf(timeText) !== -1) {
+      file = files[i]
+      break
+    }
+  }
+  if (!file) {
+    mdui.alert('未找到直播录像！请先下载')
+    return
+  }
   let win = window.open(
     '/hud/#/play', 
     `replay${Date.now()}`,
@@ -154,16 +166,8 @@ function replay(file) {
       </table>
     </div>
 
-    <button class="mdui-btn mdui-color-theme-accent mdui-ripple" @click="selectFile">播放回放</button>
+    <button class="mdui-btn mdui-color-theme-accent mdui-ripple" @click="replay">播放回放</button>
 
     <div id="danmu-chart" style="height: 400px;"></div>
   </template>
-  <div class="mdui-dialog" id="file-dialog">
-    <div class="mdui-dialog-title">选择视频文件</div>
-    <div class="mdui-dialog-content">
-      <ul class="mdui-list">
-        <li v-for="file in files" class="mdui-list-item mdui-ripple" @click="replay(file)">{{ file }}</li>
-      </ul>
-    </div>
-  </div>
 </template>

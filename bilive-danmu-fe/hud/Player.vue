@@ -22,7 +22,6 @@
         </template>
         {{ i.user.name }}：<span :style="{ color: '#' + i.color }">{{ i.content }}</span>
       </div>
-      <div id="anchor"></div>
     </div>
   </div>
 </template>
@@ -119,15 +118,16 @@ function resizeCanvas() {
 
     canvasCtx = canvas.getContext('2d')
     canvasCtx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
+    canvasCtx.textBaseline = 'top'
     canvasCtx.font = `bold ${renderFontSize}px Microsoft YaHei`
     canvasCtx.strokeStyle = '#000000'
   }
 }
 
 function renderText(content, x, y, color) {
-  canvasCtx.strokeText(content, x, y + 20)
+  canvasCtx.strokeText(content, x, y)
   canvasCtx.fillStyle = color
-  canvasCtx.fillText(content, x, y + 20)
+  canvasCtx.fillText(content, x, y)
 }
 
 function renderDanmu(cur) {
@@ -272,8 +272,6 @@ function onplay() {
   frame()
 }
 
-
-
 onMounted(() => {
   video = document.getElementById('video')
   canvas = document.getElementById('canvas')
@@ -289,6 +287,10 @@ onMounted(() => {
 </script>
 
 <style scoped>
+  body {
+    margin: 0;
+  }
+
   #danmu {
     position: fixed;
     top: 0;

@@ -31,17 +31,9 @@
 import { ref, onMounted, nextTick } from 'vue'
 const boatDic = { 0: '', 1: '总', 2: '提', 3: '舰' }
 
-let scTab
-let dmCtr
-let subWin
-
+let scTab, dmCtr
 let ws
-let danmu = ref([])
-let sc = ref([])
-
-let hover = ref(false)
-let lock = false
-
+let subWin
 onMounted(() => {
   scTab = new mdui.Tab('#sc-tab')
   dmCtr = document.getElementById('danmu-container')
@@ -61,6 +53,17 @@ onMounted(() => {
   }
 })
 
+function scrollToBottom() {
+  if (dmCtr.scrollTop === dmCtr.scrollHeight) return
+  lock = true
+  dmCtr.scrollTop = dmCtr.scrollHeight
+}
+
+// 弹幕部分
+let danmu = ref([])
+
+let hover = ref(false)
+let lock = false
 function onDanmu(data) {
   danmu.value.push(data)
   if ((danmu.value.length > 1000 && hover.value === false) || danmu.value.length > 5000) {
@@ -75,23 +78,7 @@ function onDanmu(data) {
   }
   if (hover.value) return
   nextTick(() => {
-    lock = true
-    dmCtr.scrollTop = dmCtr.scrollHeight
-  })
-}
-
-function onSc(data) {
-  sc.value.unshift(data)
-  showSc(0)
-}
-
-let curSc = ref(0)
-
-function showSc(index) {
-  curSc.value = index
-  nextTick(() => {
-    scTab.handleUpdate()
-    scTab.show(index)
+    scrollToBottom()
   })
 }
 
@@ -109,6 +96,25 @@ function lockScroll() {
   dmCtr.scrollTop = dmCtr.scrollHeight
 }
 
+
+// SC部分
+let sc = ref([])
+function onSc(data) {
+  sc.value.unshift(data)
+  showSc(0)
+}
+
+let curSc = ref(0)
+function showSc(index) {
+  curSc.value = index
+  nextTick(() => {
+    scTab.handleUpdate()
+    scTab.show(index)
+  })
+}
+
+
+// 子窗口
 function openSub() {
   subWin = window.open(
     '/hud/#/live_sub',
