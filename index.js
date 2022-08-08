@@ -4,6 +4,7 @@ import api from './api.js'
 import wss from './wss.js'
 
 const danmu = new Danmu(21402309)
+api()
 // 关注真白花音喵 关注真白花音谢谢喵
 
 danmu.connect()
@@ -19,7 +20,6 @@ danmu.on('ws', () => {
 
 danmu.on('ready', () => {
   console.log('* 成功进入直播间')
-  api()
 })
 
 danmu.on('danmu', (data) => {

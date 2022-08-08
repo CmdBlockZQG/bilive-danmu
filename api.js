@@ -48,10 +48,11 @@ app.get('/api/seg/:l/:r', async (req, res) => {
   })
   let dic = {}
   for (let i = 0; i < danmu.length; ++i) {
-    const seg = nodejieba.cut(danmu[i].content)
+    const seg = nodejieba.extract(danmu[i].content, 999)
     for (let j of seg) {
-      if (!dec[j]) dic[j] = 0
-      else ++dic[j]
+      const w = j.word
+      if (!dic[w]) dic[w] = j.weight
+      else dic[w] += j.weight
     }
   }
   let arr = []
@@ -59,7 +60,7 @@ app.get('/api/seg/:l/:r', async (req, res) => {
     arr.push([k, dic[k]])
   }
   arr.sort((a, b) => b[1] - a[1])
-  res.json(arr.slice(0, 99))
+  res.json(arr.slice(0, 100))
 })
 
 app.post('/api/youget/:bv', async (req, res) => {
