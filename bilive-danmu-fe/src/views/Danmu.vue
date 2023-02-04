@@ -2,6 +2,7 @@
 import axios from 'axios'
 import { ref, onMounted, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
+import { saveAs } from 'file-saver'
 
 const route = useRoute()
 
@@ -142,6 +143,40 @@ async function cloud() {
   WordCloud(document.getElementById('cloud-canvas'), { list: data })
 }
 
+function formatTime(t) {
+  let x = t - start.value
+  const h = Math.floor(x / (3600 * 1000)).toString().padStart(2, '0')
+  x %= 3600 * 1000
+  const m = Math.floor(x / (60 * 1000)).toString().padStart(2, '0')
+  x %= 60 * 1000
+  const s = Math.floor(x / 1000).toString().padStart(2, '0')
+  x %= 1000
+  return `${h}:${m}:${s},${x}`
+}
+
+function srt() {
+  let res = ''
+  let p = 0
+  let last = null
+  for (let i of rawData.danmu) {
+    const l = i.content.indexOf('【'),
+          r = i.content.indexOf('】')
+    if (l === -1 || r === -1 || l + 1 === r) continue
+    if (!last) {
+      last = i
+      continue
+    }
+    const endTime = Math.min(last.time + 5000, i.time - 1)
+    res += `${++p}\r\n${formatTime(last.time)} --> ${formatTime(endTime)}\r\n${last.content}\r\n\r\n`
+    last = i
+  }
+  if (last) res += `${++p}\r\n${formatTime(last.time)} --> ${formatTime(last.time + 5000)}\r\n${last.content}\r\n\r\n`
+  const blob = new Blob([res], {
+    type: 'text/plain;charset=utf-8'
+  })
+  saveAs(blob, `${start.value}.srt`)
+}
+
 </script>
 
 <template>
@@ -178,6 +213,7 @@ async function cloud() {
     </div>
 
     <button class="mdui-btn mdui-color-theme-accent mdui-ripple button" @click="replay">播放回放</button>
+    <button class="mdui-btn mdui-color-theme-accent mdui-ripple button" @click="srt">下载同传srt</button>
 
     <div id="danmu-chart" style="height: 400px;"></div>
   </template>
